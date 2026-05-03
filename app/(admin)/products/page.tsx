@@ -1,8 +1,14 @@
+'use client';
+import { useEffect, useState } from 'react';
+
+type Category = { id: string; name: string };
+type Product = { id: string; name: string; code: string; brand?: string | null; season?: string | null; gender?: string | null; status: string; createdAt: string; category?: Category | null; categoryId?: string | null; imageUrl?: string | null; description?: string | null };
+const empty = { name: '', productCode: '', categoryId: '', brand: '', season: '', gender: '', imageUrl: '', description: '', status: 'ACTIVE' };
 export default function Page() {
-  return (
-    <div className="rounded-lg border border-slate-200 bg-white p-6">
-      <h2 className="text-xl font-semibold">products</h2>
-      <p className="mt-2 text-sm text-slate-500">模块建设中，后续会补充列表、筛选与操作能力。</p>
-    </div>
-  );
+  const [rows, setRows] = useState<Product[]>([]); const [categories, setCategories] = useState<Category[]>([]); const [form, setForm] = useState<any>(empty); const [keyword, setKeyword] = useState(''); const [editingId, setEditingId] = useState(''); const [error, setError] = useState('');
+  const load = async () => { const [p, c] = await Promise.all([fetch(`/api/products?keyword=${encodeURIComponent(keyword)}`).then(r => r.json()), fetch('/api/categories').then(r => r.json())]); setRows(p); setCategories(c); };
+  useEffect(() => { load(); }, []);
+  const save = async () => { setError(''); const method = editingId ? 'PUT' : 'POST'; const url = editingId ? `/api/products/${editingId}` : '/api/products'; const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) }); if (!r.ok) { setError((await r.json()).message || '保存失败'); return; } setForm(empty); setEditingId(''); load(); };
+  const del = async (id: string) => { if (!confirm('确定删除该商品吗？')) return; const r = await fetch(`/api/products/${id}`, { method: 'DELETE' }); if (!r.ok) { alert((await r.json()).message || '删除失败'); return; } load(); };
+  return <div className="space-y-4"><div className="rounded-lg border bg-white p-4"><h2 className="text-xl font-semibold">商品管理</h2><div className="mt-3 grid gap-2 md:grid-cols-4">{Object.entries({ name: '商品名称*', productCode: '商品货号*', brand: '品牌', season: '季节', gender: '人群', imageUrl: '图片URL', description: '描述', status: '状态' }).map(([k, label]) => <input key={k} className="rounded border p-2 text-sm" placeholder={label} value={form[k]} onChange={e => setForm({ ...form, [k]: e.target.value })} />)}<select className="rounded border p-2 text-sm" value={form.categoryId} onChange={e => setForm({ ...form, categoryId: e.target.value })}><option value="">分类</option>{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>{error && <p className="mt-2 text-sm text-red-500">{error}</p>}<button onClick={save} className="mt-3 rounded bg-brand-600 px-4 py-2 text-sm text-white">{editingId ? '更新' : '新增'}</button></div><div className="rounded-lg border bg-white p-4"><div className="mb-3 flex gap-2"><input className="w-72 rounded border p-2 text-sm" placeholder="按名称/货号/分类搜索" value={keyword} onChange={e => setKeyword(e.target.value)} /><button className="rounded border px-3" onClick={load}>搜索</button></div><table className="w-full text-sm"><thead><tr className="text-left"><th>商品名称</th><th>商品货号</th><th>分类</th><th>品牌</th><th>季节</th><th>人群</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead><tbody>{rows.map(r => <tr key={r.id} className="border-t"><td>{r.name}</td><td>{r.code}</td><td>{r.category?.name}</td><td>{r.brand}</td><td>{r.season}</td><td>{r.gender}</td><td>{r.status}</td><td>{new Date(r.createdAt).toLocaleString()}</td><td><button className="mr-2 text-blue-600" onClick={() => { setEditingId(r.id); setForm({ name: r.name, productCode: r.code, categoryId: r.categoryId || '', brand: r.brand || '', season: r.season || '', gender: r.gender || '', imageUrl: r.imageUrl || '', description: r.description || '', status: r.status }); }}>编辑</button><button className="text-red-600" onClick={() => del(r.id)}>删除</button></td></tr>)}</tbody></table></div></div>;
 }
