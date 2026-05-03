@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = env("DB_PROVIDER")
+  url      = env("DATABASE_URL")
+}
+
+enum MovementType {
+  IN
+  OUT
+  TRANSFER
+  ADJUSTMENT
+  DAMAGE
+  RETURN
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  role      String   @default("staff")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  movements StockMovement[]
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products Product[]
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String?
+  imageUrl    String?
+  categoryId  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  category Category?  @relation(fields: [categoryId], references: [id])
+  variants Variant[]
+}
+
+model Variant {
+  id            String   @id @default(cuid())
+  sku           String   @unique
+  barcode       String?  @unique
+  color         String
+  size          String
+  style         String?
+  costPrice     Decimal  @db.Decimal(10, 2)
+  salePrice     Decimal  @db.Decimal(10, 2)
+  imageUrl      String?
+  lowStockLevel Int      @default(10)
+  productId     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  product    Product          @relation(fields: [productId], references: [id])
+  stocks     InventoryStock[]
+  movements  StockMovement[]
+}
+
+model Warehouse {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  location  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  locations        StorageLocation[]
+  stocks           InventoryStock[]
+  movementFromList StockMovement[] @relation("MovementFromWarehouse")
+  movementToList   StockMovement[] @relation("MovementToWarehouse")
+}
+
+model StorageLocation {
+  id          String   @id @default(cuid())
+  code        String
+  name        String
+  warehouseId String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+
+  @@unique([warehouseId, code])
+}
+
+model InventoryStock {
+  id          String   @id @default(cuid())
+  variantId   String
+  warehouseId String
+  quantity    Int      @default(0)
+  updatedAt   DateTime @updatedAt
+
+  variant   Variant   @relation(fields: [variantId], references: [id])
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+
+  @@unique([variantId, warehouseId])
+}
+
+model StockMovement {
+  id              String       @id @default(cuid())
+  movementType    MovementType
+  quantity        Int
+  unitCost        Decimal?     @db.Decimal(10, 2)
+  note            String?
+  variantId       String
+  fromWarehouseId String?
+  toWarehouseId   String?
+  operatorId      String?
+  bizRefType      String?
+  bizRefId        String?
+  createdAt       DateTime     @default(now())
+
+  variant       Variant    @relation(fields: [variantId], references: [id])
+  fromWarehouse Warehouse? @relation("MovementFromWarehouse", fields: [fromWarehouseId], references: [id])
+  toWarehouse   Warehouse? @relation("MovementToWarehouse", fields: [toWarehouseId], references: [id])
+  operator      User?      @relation(fields: [operatorId], references: [id])
+}
