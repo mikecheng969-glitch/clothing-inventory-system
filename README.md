@@ -109,3 +109,10 @@ DATABASE_URL="postgresql://user:password@localhost:5432/clothing_inventory?schem
 - 扫码枪与条码打印
 - Excel 导入导出
 - 电商平台订单同步
+
+## 8. MVP 首批可用功能（已实现）
+
+- 商品管理：列表、搜索（名称/货号/分类）、新增、编辑、删除（存在 SKU 时禁止删除）。
+- SKU 管理：列表、搜索（商品/SKU/条码/颜色/尺码）、新增、编辑、删除。
+- 仓库管理：列表、新增、编辑、删除。
+- Seed 分类默认包含：童装、女装、男装、配饰、民族服饰。
