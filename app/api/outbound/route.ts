@@ -27,12 +27,20 @@ export async function POST(req: Request) {
     if (!Number.isInteger(quantity) || quantity <= 0) return jsonErr('出库数量必须大于 0');
 
     const result = await prisma.$transaction(async (tx: any) => {
-      const stock = await tx.inventoryStock.findUnique({ where: { variantId_warehouseId: { variantId, warehouseId } } });
-      const beforeQuantity = stock?.quantity ?? 0;
-      if (beforeQuantity < quantity) throw new Error(`库存不足，当前仅剩 ${beforeQuantity}`);
-      const afterQuantity = beforeQuantity - quantity;
+      const updateResult = await tx.inventoryStock.updateMany({
+        where: { variantId, warehouseId, quantity: { gte: quantity } },
+        data: { quantity: { decrement: quantity } },
+      });
 
-      await tx.inventoryStock.update({ where: { variantId_warehouseId: { variantId, warehouseId } }, data: { quantity: afterQuantity } });
+      if (updateResult.count === 0) {
+        const stock = await tx.inventoryStock.findUnique({ where: { variantId_warehouseId: { variantId, warehouseId } } });
+        const current = stock?.quantity ?? 0;
+        throw new Error(`库存不足，当前仅剩 ${current}`);
+      }
+
+      const stock = await tx.inventoryStock.findUnique({ where: { variantId_warehouseId: { variantId, warehouseId } } });
+      const afterQuantity = stock?.quantity ?? 0;
+      const beforeQuantity = afterQuantity + quantity;
 
       const orderNo = await buildOrderNo(tx);
       const movement = await tx.stockMovement.create({

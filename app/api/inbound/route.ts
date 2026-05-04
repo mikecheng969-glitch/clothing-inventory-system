@@ -29,15 +29,15 @@ export async function POST(req: Request) {
     if (!Number.isInteger(quantity) || quantity <= 0) return jsonErr('入库数量必须大于 0');
 
     const result = await prisma.$transaction(async (tx: any) => {
-      const stock = await tx.inventoryStock.findUnique({ where: { variantId_warehouseId: { variantId, warehouseId } } });
-      const beforeQuantity = stock?.quantity ?? 0;
-      const afterQuantity = beforeQuantity + quantity;
-
       await tx.inventoryStock.upsert({
         where: { variantId_warehouseId: { variantId, warehouseId } },
-        update: { quantity: afterQuantity },
+        update: { quantity: { increment: quantity } },
         create: { variantId, warehouseId, quantity },
       });
+
+      const stock = await tx.inventoryStock.findUnique({ where: { variantId_warehouseId: { variantId, warehouseId } } });
+      const afterQuantity = stock?.quantity ?? quantity;
+      const beforeQuantity = afterQuantity - quantity;
 
       const orderNo = await buildOrderNo('RK', tx as any);
       const movement = await tx.stockMovement.create({
