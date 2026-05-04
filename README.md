@@ -114,5 +114,6 @@ DATABASE_URL="postgresql://user:password@localhost:5432/clothing_inventory?schem
 
 - 商品管理：列表、搜索（名称/货号/分类）、新增、编辑、删除（存在 SKU 时禁止删除）。
 - SKU 管理：列表、搜索（商品/SKU/条码/颜色/尺码）、新增、编辑、删除。
+- 字段约定：`Product.code` 为商品货号，`Variant.sku` 为 SKU 编码（前端/API/Seed 统一）。
 - 仓库管理：列表、新增、编辑、删除。
 - Seed 分类默认包含：童装、女装、男装、配饰、民族服饰。

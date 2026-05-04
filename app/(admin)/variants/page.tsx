@@ -1,14 +1,211 @@
 'use client';
+
 import { useEffect, useState } from 'react';
 
 type Product = { id: string; name: string };
-type Row = { id: string; productId: string; sku: string; barcode?: string | null; color: string; size: string; style?: string | null; costPrice: string; salePrice: string; lowStockLevel: number; status: string; product: Product };
-const empty = { productId: '', skuCode: '', barcode: '', color: '', size: '', style: '', costPrice: 0, salePrice: 0, warningStock: 10, status: 'ACTIVE' };
+type Row = {
+  id: string;
+  productId: string;
+  sku: string;
+  barcode?: string | null;
+  color: string;
+  size: string;
+  style?: string | null;
+  costPrice: string;
+  salePrice: string;
+  lowStockLevel: number;
+  status: string;
+  product: Product;
+};
+
+type VariantForm = {
+  productId: string;
+  sku: string;
+  barcode: string;
+  color: string;
+  size: string;
+  style: string;
+  costPrice: number | string;
+  salePrice: number | string;
+  warningStock: number | string;
+  status: string;
+};
+
+const empty: VariantForm = {
+  productId: '',
+  sku: '',
+  barcode: '',
+  color: '',
+  size: '',
+  style: '',
+  costPrice: 0,
+  salePrice: 0,
+  warningStock: 10,
+  status: 'ACTIVE',
+};
+
 export default function Page() {
-  const [rows, setRows] = useState<Row[]>([]); const [products, setProducts] = useState<Product[]>([]); const [form, setForm] = useState<any>(empty); const [keyword, setKeyword] = useState(''); const [editingId, setEditingId] = useState(''); const [error, setError] = useState('');
-  const load = async () => { const [v, p] = await Promise.all([fetch(`/api/variants?keyword=${encodeURIComponent(keyword)}`).then(r => r.json()), fetch('/api/products').then(r => r.json())]); setRows(v); setProducts(p); };
-  useEffect(() => { load(); }, []);
-  const save = async () => { setError(''); const r = await fetch(editingId ? `/api/variants/${editingId}` : '/api/variants', { method: editingId ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) }); if (!r.ok) { setError((await r.json()).message || '失败'); return; } setEditingId(''); setForm(empty); load(); };
-  const del = async (id: string) => { if (!confirm('确定删除该 SKU 吗？')) return; await fetch(`/api/variants/${id}`, { method: 'DELETE' }); load(); };
-  return <div className="space-y-4"><div className="rounded-lg border bg-white p-4"><h2 className="text-xl font-semibold">SKU 管理</h2><div className="mt-3 grid gap-2 md:grid-cols-4"><select className="rounded border p-2 text-sm" value={form.productId} onChange={e => setForm({ ...form, productId: e.target.value })}><option value="">所属商品*</option>{products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select>{['skuCode','barcode','color','size','style','costPrice','salePrice','warningStock','status'].map(k => <input key={k} className="rounded border p-2 text-sm" placeholder={k} value={form[k]} onChange={e => setForm({ ...form, [k]: e.target.value })} />)}</div>{error && <p className="mt-2 text-red-500 text-sm">{error}</p>}<button onClick={save} className="mt-3 rounded bg-brand-600 px-4 py-2 text-sm text-white">{editingId ? '更新' : '新增'}</button></div><div className="rounded-lg border bg-white p-4"><div className="mb-3 flex gap-2"><input className="w-80 rounded border p-2 text-sm" placeholder="按商品/SKU/条码/颜色/尺码搜索" value={keyword} onChange={e => setKeyword(e.target.value)} /><button className="rounded border px-3" onClick={load}>搜索</button></div><table className="w-full text-sm"><thead><tr className="text-left"><th>所属商品</th><th>SKU 编码</th><th>条码</th><th>颜色</th><th>尺码</th><th>款式</th><th>成本价</th><th>销售价</th><th>预警库存</th><th>状态</th><th>操作</th></tr></thead><tbody>{rows.map(r => <tr key={r.id} className="border-t"><td>{r.product?.name}</td><td>{r.sku}</td><td>{r.barcode}</td><td>{r.color}</td><td>{r.size}</td><td>{r.style}</td><td>{r.costPrice}</td><td>{r.salePrice}</td><td>{r.lowStockLevel}</td><td>{r.status}</td><td><button className="mr-2 text-blue-600" onClick={() => { setEditingId(r.id); setForm({ productId: r.productId, skuCode: r.sku, barcode: r.barcode || '', color: r.color, size: r.size, style: r.style || '', costPrice: r.costPrice, salePrice: r.salePrice, warningStock: r.lowStockLevel, status: r.status }); }}>编辑</button><button className="text-red-600" onClick={() => del(r.id)}>删除</button></td></tr>)}</tbody></table></div></div>;
+  const [rows, setRows] = useState<Row[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [form, setForm] = useState<VariantForm>(empty);
+  const [keyword, setKeyword] = useState('');
+  const [editingId, setEditingId] = useState('');
+  const [error, setError] = useState('');
+
+  const load = async () => {
+    const [v, p] = await Promise.all([
+      fetch(`/api/variants?keyword=${encodeURIComponent(keyword)}`).then((r) => r.json()),
+      fetch('/api/products').then((r) => r.json()),
+    ]);
+    setRows(v);
+    setProducts(p);
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const save = async () => {
+    setError('');
+    const r = await fetch(editingId ? `/api/variants/${editingId}` : '/api/variants', {
+      method: editingId ? 'PUT' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form),
+    });
+
+    if (!r.ok) {
+      setError((await r.json()).message || 'SKU 保存失败，请稍后重试');
+      return;
+    }
+
+    setEditingId('');
+    setForm(empty);
+    load();
+  };
+
+  const del = async (id: string) => {
+    if (!confirm('确定删除该 SKU 吗？')) return;
+    const r = await fetch(`/api/variants/${id}`, { method: 'DELETE' });
+    if (!r.ok) {
+      setError((await r.json()).message || 'SKU 删除失败，请稍后重试');
+      return;
+    }
+    load();
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border bg-white p-4">
+        <h2 className="text-xl font-semibold">SKU 管理</h2>
+        <div className="mt-3 grid gap-2 md:grid-cols-4">
+          <select
+            className="rounded border p-2 text-sm"
+            value={form.productId}
+            onChange={(e) => setForm({ ...form, productId: e.target.value })}
+          >
+            <option value="">所属商品*</option>
+            {products.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+
+          {['sku', 'barcode', 'color', 'size', 'style', 'costPrice', 'salePrice', 'warningStock', 'status'].map((k) => (
+            <input
+              key={k}
+              className="rounded border p-2 text-sm"
+              placeholder={k}
+              value={form[k as keyof VariantForm] as string | number}
+              onChange={(e) =>
+                setForm({ ...form, [k]: e.target.value } as VariantForm)
+              }
+            />
+          ))}
+        </div>
+
+        {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
+
+        <button
+          onClick={save}
+          className="mt-3 rounded bg-brand-600 px-4 py-2 text-sm text-white"
+        >
+          {editingId ? '更新' : '新增'}
+        </button>
+      </div>
+
+      <div className="rounded-lg border bg-white p-4">
+        <div className="mb-3 flex gap-2">
+          <input
+            className="w-80 rounded border p-2 text-sm"
+            placeholder="按商品/SKU/条码/颜色/尺码搜索"
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+          />
+          <button className="rounded border px-3" onClick={load}>
+            搜索
+          </button>
+        </div>
+
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left">
+              <th>所属商品</th>
+              <th>SKU 编码</th>
+              <th>条码</th>
+              <th>颜色</th>
+              <th>尺码</th>
+              <th>款式</th>
+              <th>成本价</th>
+              <th>销售价</th>
+              <th>预警库存</th>
+              <th>状态</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.id} className="border-t">
+                <td>{r.product?.name}</td>
+                <td>{r.sku}</td>
+                <td>{r.barcode}</td>
+                <td>{r.color}</td>
+                <td>{r.size}</td>
+                <td>{r.style}</td>
+                <td>{r.costPrice}</td>
+                <td>{r.salePrice}</td>
+                <td>{r.lowStockLevel}</td>
+                <td>{r.status}</td>
+                <td>
+                  <button
+                    className="mr-2 text-blue-600"
+                    onClick={() => {
+                      setEditingId(r.id);
+                      setForm({
+                        productId: r.productId,
+                        sku: r.sku,
+                        barcode: r.barcode || '',
+                        color: r.color,
+                        size: r.size,
+                        style: r.style || '',
+                        costPrice: r.costPrice,
+                        salePrice: r.salePrice,
+                        warningStock: r.lowStockLevel,
+                        status: r.status,
+                      });
+                    }}
+                  >
+                    编辑
+                  </button>
+                  <button className="text-red-600" onClick={() => del(r.id)}>
+                    删除
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 }

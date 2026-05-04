@@ -1,4 +1,4 @@
-import { PrismaClient, MovementType } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
@@ -24,8 +24,8 @@ async function main() {
 
   await prisma.inventoryStock.upsert({ where: { variantId_warehouseId: { variantId: variant.id, warehouseId: mainWh.id } }, update: { quantity: 100 }, create: { variantId: variant.id, warehouseId: mainWh.id, quantity: 100 } });
 
-  await prisma.stockMovement.create({ data: { movementType: MovementType.IN, quantity: 100, unitCost: 35, note: '初始化入库', variantId: variant.id, toWarehouseId: mainWh.id, operatorId: admin.id, bizRefType: 'SEED' } });
-  await prisma.stockMovement.create({ data: { movementType: MovementType.TRANSFER, quantity: 10, note: '样例调拨', variantId: variant.id, fromWarehouseId: mainWh.id, toWarehouseId: storeWh.id, operatorId: admin.id, bizRefType: 'SEED' } });
+  await prisma.stockMovement.create({ data: { movementType: "IN" as any, quantity: 100, unitCost: 35, note: '初始化入库', variantId: variant.id, toWarehouseId: mainWh.id, operatorId: admin.id, bizRefType: 'SEED' } });
+  await prisma.stockMovement.create({ data: { movementType: "TRANSFER" as any, quantity: 10, note: '样例调拨', variantId: variant.id, fromWarehouseId: mainWh.id, toWarehouseId: storeWh.id, operatorId: admin.id, bizRefType: 'SEED' } });
 }
 
 main().finally(async () => prisma.$disconnect());
