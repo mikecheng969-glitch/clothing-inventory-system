@@ -96,7 +96,7 @@ export default function Page() {
   return (
     <div className="space-y-4">
       <div className="rounded-lg border bg-white p-4">
-        <h2 className="text-xl font-semibold">SKU 管理</h2>
+        <h2 className="text-xl font-semibold">SKU管理</h2>
         <div className="mt-3 grid gap-2 md:grid-cols-4">
           <select
             className="rounded border p-2 text-sm"
@@ -111,11 +111,21 @@ export default function Page() {
             ))}
           </select>
 
-          {['sku', 'barcode', 'color', 'size', 'style', 'costPrice', 'salePrice', 'warningStock', 'status'].map((k) => (
+          {Object.entries({
+            sku: 'SKU编码*',
+            barcode: '条码',
+            color: '颜色*',
+            size: '尺码*',
+            style: '款式',
+            costPrice: '成本价',
+            salePrice: '销售价',
+            warningStock: '预警库存',
+            status: '状态',
+          }).map(([k, label]) => (
             <input
               key={k}
               className="rounded border p-2 text-sm"
-              placeholder={k}
+              placeholder={label}
               value={form[k as keyof VariantForm] as string | number}
               onChange={(e) =>
                 setForm({ ...form, [k]: e.target.value } as VariantForm)
